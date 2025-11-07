@@ -1,5 +1,4 @@
-<!DOCTYPE html> 
-
+<!doctype html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="utf-8" />
@@ -12,14 +11,13 @@
     html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,'Noto Sans Arabic',sans-serif;background:linear-gradient(180deg,#071026 0%,var(--bg) 100%);color:#e6eef6}
     .wrap{max-width:1100px;margin:28px auto;padding:20px}
 
-    header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;flex-wrap:wrap}
     h1{font-size:20px;margin:0}
-    .controls{display:flex;gap:10px;align-items:center}
+    .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
     .search{background:var(--card);border:1px solid rgba(255,255,255,0.03);padding:8px 10px;border-radius:10px;color:inherit}
-    select,button{padding:8px 12px;border-radius:10px;border:0;background:var(--glass);color:inherit}
+    select,button,input[type=file]{padding:8px 12px;border-radius:10px;border:0;background:var(--glass);color:inherit;cursor:pointer}
     button.primary{background:linear-gradient(90deg,var(--accent),#7c3aed);border:0}
 
-    /* gallery grid */
     .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
     .card{background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);border-radius:12px;padding:8px;overflow:hidden;position:relative;border:1px solid rgba(255,255,255,0.02)}
     .thumb{width:100%;height:150px;object-fit:cover;border-radius:8px;display:block}
@@ -27,10 +25,8 @@
     .meta h3{margin:0;font-size:14px}
     .meta p{margin:6px 0 0;font-size:12px;color:var(--muted)}
 
-    /* video badge */
     .badge{position:absolute;left:8px;top:8px;background:rgba(0,0,0,0.4);padding:6px;border-radius:8px;font-size:12px}
 
-    /* modal */
     .modal{position:fixed;inset:0;background:rgba(2,6,23,0.7);display:flex;align-items:center;justify-content:center;z-index:60;opacity:0;pointer-events:none;transition:opacity .2s}
     .modal.open{opacity:1;pointer-events:auto}
     .viewer{max-width:90%;max-height:90%;background:var(--card);padding:10px;border-radius:12px;box-shadow:0 10px 40px rgba(2,6,23,0.7);display:flex;flex-direction:column;gap:8px}
@@ -39,18 +35,14 @@
     .viewer-meta{display:flex;align-items:center;justify-content:space-between;gap:8px}
     .close{background:transparent;border:0;color:var(--muted);cursor:pointer}
 
-    /* small responsive tweaks */
     @media (max-width:600px){.thumb{height:120px}.viewer{padding:8px}}
 
-    /* keyboard hint */
     .hint{font-size:12px;color:var(--muted);margin-top:10px}
 
-    /* simple filter pills */
     .pills{display:flex;gap:8px;flex-wrap:wrap}
     .pill{padding:6px 10px;border-radius:999px;background:rgba(255,255,255,0.03);cursor:pointer;border:1px solid rgba(255,255,255,0.02)}
     .pill.active{outline:2px solid rgba(255,255,255,0.03);box-shadow:0 6px 18px rgba(0,0,0,0.4)}
 
-    /* small footer */
     footer{margin-top:18px;color:var(--muted);font-size:13px;text-align:center}
   </style>
 </head>
@@ -59,7 +51,7 @@
     <header>
       <div>
         <h1>معرض الوسائط — صور وفيديو</h1>
-        <div class="hint">اضغط على أي صورة/فيديو لفتحه بشكل أكبر. يمكن استخدام الأسهم للتنقل وEscape للإغلاق.</div>
+        <div class="hint">اضغط على أي صورة/فيديو لفتحه بشكل أكبر. يمكنك رفع ملفاتك الخاصة أيضًا.</div>
       </div>
 
       <div class="controls">
@@ -70,6 +62,7 @@
           <option value="video">فيديو</option>
         </select>
         <button class="primary" id="shuffleBtn">ترتيب عشوائي</button>
+        <input type="file" id="upload" accept="image/*,video/*" multiple />
       </div>
     </header>
 
@@ -81,8 +74,7 @@
       <button class="pill" data-cat="music">موسيقى</button>
     </div>
 
-    <main class="grid" id="gallery">
-      <!-- العناصر تُضاف ديناميكياً عبر السكربت --></main>
+    <main class="grid" id="gallery"></main>
 
     <div class="modal" id="modal" aria-hidden="true">
       <div class="viewer" role="dialog" aria-modal="true">
@@ -101,148 +93,103 @@
       </div>
     </div>
 
-    <footer>نموذج بسيط — يمكنك إضافة تحميل ملفات أو ربطه بخلفية (backend) لاحقاً</footer>
+    <footer>نموذج بسيط — يمكنك إضافة تحميل ملفات أو ربطه بخلفية لاحقاً</footer>
   </div>
 
   <script>
-    // مثال بيانات مبدئية. استبدل الروابط بما لديك أو قم بإدراجها ديناميكياً من السيرفر
     const items = [
       {id:1,type:'image',src:'https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1200&auto=format&fit=crop&crop=entropy',title:'شاطئ عند الغروب',desc:'ساحل هادئ',cat:'travel'},
       {id:2,type:'video',src:'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',thumb:'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop&crop=entropy',title:'فيديو زهرة',desc:'فيديو قصير عن زهرة',cat:'nature'},
-      {id:3,type:'image',src:'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=1200&auto=format&fit=crop&crop=entropy',title:'غابة صباحاً',desc:'أشجار وضباب',cat:'nature'},
-      {id:4,type:'video',src:'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/bee.mp4',thumb:'https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=1200&auto=format&fit=crop&crop=entropy',title:'فيديو نحلة',desc:'لقطة مقربة',cat:'nature'},
-      {id:5,type:'image',src:'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?q=80&w=1200&auto=format&fit=crop&crop=entropy',title:'حفل موسيقي',desc:'موسيقى مباشرة',cat:'music'},
-      {id:6,type:'image',src:'https://images.unsplash.com/photo-1504198453319-5ce911bafcde?q=80&w=1200&auto=format&fit=crop&crop=entropy',title:'مباراة',desc:'لحظة هدف',cat:'sports'}
+      {id:3,type:'image',src:'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=1200&auto=format&fit=crop&crop=entropy',title:'غابة صباحاً',desc:'أشجار وضباب',cat:'nature'}
     ];
 
-    const gallery = document.getElementById('gallery');
-    const modal = document.getElementById('modal');
-    const viewerMedia = document.getElementById('viewerMedia');
-    const viewerTitle = document.getElementById('viewerTitle');
-    const viewerDesc = document.getElementById('viewerDesc');
-    const search = document.getElementById('search');
-    const typeFilter = document.getElementById('typeFilter');
-    const shuffleBtn = document.getElementById('shuffleBtn');
-    const categoryContainer = document.getElementById('categories');
+    const gallery=document.getElementById('gallery');
+    const modal=document.getElementById('modal');
+    const viewerMedia=document.getElementById('viewerMedia');
+    const viewerTitle=document.getElementById('viewerTitle');
+    const viewerDesc=document.getElementById('viewerDesc');
+    const search=document.getElementById('search');
+    const typeFilter=document.getElementById('typeFilter');
+    const shuffleBtn=document.getElementById('shuffleBtn');
+    const categoryContainer=document.getElementById('categories');
+    const uploadInput=document.getElementById('upload');
 
-    let filtered = items.slice();
-    let currentIndex = -1;
+    let filtered=items.slice();
+    let currentIndex=-1;
 
     function renderGallery(list){
       gallery.innerHTML='';
-      list.forEach((it, idx)=>{
-        const card = document.createElement('article');
+      list.forEach((it,idx)=>{
+        const card=document.createElement('article');
         card.className='card';
-        card.dataset.index = idx;
-        card.innerHTML = `
-          ${it.type==='video'?'<span class="badge">فيديو</span>':''}
+        card.dataset.index=idx;
+        card.innerHTML=`${it.type==='video'?'<span class="badge">فيديو</span>':''}
           <img loading="lazy" class="thumb" src="${it.type==='image'?it.src:it.thumb||it.src}" alt="${escapeHtml(it.title)}" />
-          <div class="meta"><h3>${escapeHtml(it.title)}</h3><p>${escapeHtml(it.desc)}</p></div>
-        `;
-        card.addEventListener('click', ()=> openViewer(idx));
+          <div class="meta"><h3>${escapeHtml(it.title)}</h3><p>${escapeHtml(it.desc)}</p></div>`;
+        card.addEventListener('click',()=>openViewer(idx));
         gallery.appendChild(card);
       });
     }
 
     function openViewer(idx){
-      currentIndex = idx;
-      const it = filtered[idx];
+      currentIndex=idx;
+      const it=filtered[idx];
       viewerMedia.innerHTML='';
       if(it.type==='image'){
-        const img = document.createElement('img');
-        img.src = it.src;
-        img.alt = it.title;
-        viewerMedia.appendChild(img);
+        const img=document.createElement('img');img.src=it.src;img.alt=it.title;viewerMedia.appendChild(img);
       } else {
-        const video = document.createElement('video');
-        video.controls = true;
-        video.autoplay = true;
-        video.src = it.src;
-        video.setAttribute('playsinline','');
-        viewerMedia.appendChild(video);
+        const video=document.createElement('video');video.controls=true;video.autoplay=true;video.src=it.src;video.setAttribute('playsinline','');viewerMedia.appendChild(video);
       }
-      viewerTitle.textContent = it.title;
-      viewerDesc.textContent = it.desc;
-      modal.classList.add('open');
-      modal.setAttribute('aria-hidden','false');
+      viewerTitle.textContent=it.title;
+      viewerDesc.textContent=it.desc;
+      modal.classList.add('open');modal.setAttribute('aria-hidden','false');
     }
 
-    function closeViewer(){
-      modal.classList.remove('open');
-      modal.setAttribute('aria-hidden','true');
-      viewerMedia.innerHTML='';
-      currentIndex = -1;
-    }
+    function closeViewer(){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');viewerMedia.innerHTML='';currentIndex=-1;}
+    function showNext(dir=1){if(filtered.length===0)return;currentIndex=(currentIndex+dir+filtered.length)%filtered.length;openViewer(currentIndex);}
 
-    function showNext(dir=1){
-      if(filtered.length===0) return;
-      currentIndex = (currentIndex + dir + filtered.length) % filtered.length;
-      openViewer(currentIndex);
-    }
-
-    // basic filters and search
     function applyFilters(){
-      const q = search.value.trim().toLowerCase();
-      const type = typeFilter.value;
-      const catActive = Array.from(categoryContainer.querySelectorAll('.pill.active')).map(b=>b.dataset.cat)[0] || 'all';
-      filtered = items.filter(it=>{
-        if(type!=='all' && it.type!==type) return false;
-        if(catActive!=='all' && it.cat!==catActive) return false;
-        if(!q) return true;
-        return (it.title+" "+it.desc).toLowerCase().includes(q);
+      const q=search.value.trim().toLowerCase();
+      const type=typeFilter.value;
+      const catActive=Array.from(categoryContainer.querySelectorAll('.pill.active')).map(b=>b.dataset.cat)[0]||'all';
+      filtered=items.filter(it=>{
+        if(type!=='all'&&it.type!==type)return false;
+        if(catActive!=='all'&&it.cat!==catActive)return false;
+        if(!q)return true;
+        return(it.title+" "+it.desc).toLowerCase().includes(q);
       });
       renderGallery(filtered);
     }
 
-    // shuffle
-    function shuffle(){
-      for(let i=filtered.length-1;i>0;i--){
-        const j = Math.floor(Math.random()*(i+1));
-        [filtered[i],filtered[j]]=[filtered[j],filtered[i]];
-      }
-      renderGallery(filtered);
-    }
+    function shuffle(){for(let i=filtered.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[filtered[i],filtered[j]]=[filtered[j],filtered[i]];}renderGallery(filtered);}
 
-    // pills
-    categoryContainer.addEventListener('click', e=>{
-      if(e.target.matches('.pill')){
-        categoryContainer.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));
-        e.target.classList.add('active');
-        applyFilters();
-      }
-    });
+    categoryContainer.addEventListener('click',e=>{if(e.target.matches('.pill')){categoryContainer.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));e.target.classList.add('active');applyFilters();}});
+    search.addEventListener('input',applyFilters);
+    typeFilter.addEventListener('change',applyFilters);
+    shuffleBtn.addEventListener('click',shuffle);
 
-    // event listeners
-    search.addEventListener('input', applyFilters);
-    typeFilter.addEventListener('change', applyFilters);
-    shuffleBtn.addEventListener('click', shuffle);
+    document.getElementById('closeBtn').addEventListener('click',closeViewer);
+    document.getElementById('prevBtn').addEventListener('click',()=>showNext(-1));
+    document.getElementById('nextBtn').addEventListener('click',()=>showNext(1));
+    modal.addEventListener('click',e=>{if(e.target===modal)closeViewer();});
 
-    document.getElementById('closeBtn').addEventListener('click', closeViewer);
-    document.getElementById('prevBtn').addEventListener('click', ()=> showNext(-1));
-    document.getElementById('nextBtn').addEventListener('click', ()=> showNext(1));
+    window.addEventListener('keydown',e=>{if(modal.classList.contains('open')){if(e.key==='ArrowRight')showNext(1);if(e.key==='ArrowLeft')showNext(-1);if(e.key==='Escape')closeViewer();}});
 
-    modal.addEventListener('click', e=>{ if(e.target===modal) closeViewer(); });
-
-    // keyboard navigation
-    window.addEventListener('keydown', e=>{
-      if(modal.classList.contains('open')){
-        if(e.key==='ArrowRight') showNext(1);
-        if(e.key==='ArrowLeft') showNext(-1);
-        if(e.key==='Escape') closeViewer();
-      }
-    });
-
-    // utility
     function escapeHtml(str){return String(str).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));}
 
-    // initial render
     applyFilters();
 
-    // Expose a simple global API to add items dynamically (useful if you integrate with backend)
-    window.MediaGallery = {
-      add(item){ items.push(item); applyFilters(); },
-      replaceAll(array){ items.length=0; array.forEach(a=>items.push(a)); applyFilters(); }
-    };
+    window.MediaGallery={add(item){items.push(item);applyFilters();},replaceAll(array){items.length=0;array.forEach(a=>items.push(a));applyFilters();}};
+
+    uploadInput.addEventListener('change',(e)=>{
+      const files=Array.from(e.target.files);
+      files.forEach(file=>{
+        const url=URL.createObjectURL(file);
+        const type=file.type.startsWith('video')?'video':'image';
+        MediaGallery.add({id:Date.now()+Math.random(),type,src:url,title:file.name,desc:'من ملفاتك المحلية',cat:'uploaded'});
+      });
+      uploadInput.value='';
+    });
   </script>
 </body>
 </html>
