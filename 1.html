@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>معرض الصور والفيديوهات</title>
+  <title>معرض الصور والفيديوهات - الواحة</title>
   <style>
     body {
       font-family: 'Cairo', sans-serif;
@@ -28,18 +28,6 @@
     }
     .controls input[type="file"] {
       margin: 0.5rem;
-    }
-    .controls button {
-      background: #d32f2f;
-      color: white;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 0.9rem;
-    }
-    .controls button:hover {
-      background: #b71c1c;
     }
     .gallery {
       display: grid;
@@ -66,19 +54,13 @@
       margin: 0.5rem;
       font-size: 1rem;
     }
-    .item p {
-      margin: 0 0.5rem 0.5rem;
-      font-size: 0.85rem;
-      color: #555;
-    }
   </style>
 </head>
 <body>
   <header>
-    <h1>معرض الصور والفيديوهات</h1>
+    <h1>معرض الصور والفيديوهات - الواحة</h1>
     <div class="controls">
       <input type="file" id="upload" accept="image/*,video/*" multiple />
-      <button id="clear">مسح الكل</button>
     </div>
   </header>
 
@@ -86,62 +68,65 @@
     <div class="gallery" id="gallery"></div>
   </main>
 
-  <script>
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+    // إعدادات Firebase الخاصة بمشروعك
+    const firebaseConfig = {
+      apiKey: "AIzaSyA-HZ2LfaMFxFuYWe3zhgdNK5KMAGJ0hV4",
+      authDomain: "alwaha-club.firebaseapp.com",
+      projectId: "alwaha-club",
+      storageBucket: "alwaha-club.firebasestorage.app",
+      messagingSenderId: "440585292147",
+      appId: "1:440585292147:web:3b21bc488321b5b6bc5d06",
+      measurementId: "G-H7ZZ9G98M8"
+    };
+
+    // تهيئة Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+
     const gallery = document.getElementById('gallery');
     const uploadInput = document.getElementById('upload');
-    const clearBtn = document.getElementById('clear');
 
-    let mediaList = JSON.parse(localStorage.getItem('mediaList')) || [];
-
-    function renderGallery() {
+    async function renderGallery() {
+      gallery.innerHTML = '<p style="text-align:center">جارِ تحميل الوسائط...</p>';
+      const snapshot = await getDocs(collection(db, "media"));
       gallery.innerHTML = '';
-      mediaList.forEach(item => {
+      snapshot.forEach(doc => {
+        const data = doc.data();
         const div = document.createElement('div');
         div.className = 'item';
-        if (item.type === 'image') {
-          div.innerHTML = `<img src="${item.src}" alt="${item.title}">
-                           <h3>${item.title}</h3>
-                           <p>${item.desc}</p>`;
+        if (data.type === 'image') {
+          div.innerHTML = `<img src="${data.url}" alt="${data.title}"><h3>${data.title}</h3>`;
         } else {
-          div.innerHTML = `<video controls>
-                             <source src="${item.src}" type="video/mp4">
-                           </video>
-                           <h3>${item.title}</h3>
-                           <p>${item.desc}</p>`;
+          div.innerHTML = `<video controls><source src="${data.url}" type="video/mp4"></video><h3>${data.title}</h3>`;
         }
         gallery.appendChild(div);
       });
     }
 
-    function saveToLocalStorage() {
-      localStorage.setItem('mediaList', JSON.stringify(mediaList));
-    }
-
-    uploadInput.addEventListener('change', (e) => {
+    uploadInput.addEventListener('change', async (e) => {
       const files = Array.from(e.target.files);
-      files.forEach(file => {
-        const url = URL.createObjectURL(file);
+      for (const file of files) {
+        const storageRef = ref(storage, 'uploads/' + Date.now() + '_' + file.name);
+        await uploadBytes(storageRef, file);
+        const url = await getDownloadURL(storageRef);
         const type = file.type.startsWith('video') ? 'video' : 'image';
-        const item = {
-          id: Date.now() + Math.random(),
-          type,
-          src: url,
+        await addDoc(collection(db, "media"), {
           title: file.name,
-          desc: 'من ملفاتك المحلية'
-        };
-        mediaList.push(item);
-      });
-      saveToLocalStorage();
+          url,
+          type,
+          createdAt: serverTimestamp()
+        });
+      }
+      alert("✅ تم رفع الملفات بنجاح!");
       renderGallery();
       uploadInput.value = '';
-    });
-
-    clearBtn.addEventListener('click', () => {
-      if (confirm('هل أنت متأكد أنك تريد مسح جميع الوسائط؟')) {
-        mediaList = [];
-        localStorage.removeItem('mediaList');
-        renderGallery();
-      }
     });
 
     renderGallery();
