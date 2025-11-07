@@ -41,6 +41,7 @@
       overflow: hidden;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       transition: transform 0.2s;
+      position: relative;
     }
     .item:hover {
       transform: scale(1.03);
@@ -53,6 +54,21 @@
     .item h3 {
       margin: 0.5rem;
       font-size: 1rem;
+    }
+    .delete-btn {
+      position: absolute;
+      top: 5px;
+      left: 5px;
+      background: #d32f2f;
+      color: white;
+      border: none;
+      padding: 0.3rem 0.6rem;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+    .delete-btn:hover {
+      background: #b71c1c;
     }
   </style>
 </head>
@@ -74,7 +90,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
   <script>
-    // إعدادات Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyA-HZ2LfaMFxFuYWe3zhgdNK5KMAGJ0hV4",
       authDomain: "alwaha-club.firebaseapp.com",
@@ -85,7 +100,6 @@
       measurementId: "G-H7ZZ9G98M8"
     };
 
-    // تهيئة Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     const storage = firebase.storage();
@@ -102,16 +116,37 @@
         const data = doc.data();
         const div = document.createElement('div');
         div.className = 'item';
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.textContent = 'حذف';
+        deleteBtn.onclick = () => deleteMedia(doc.id, data.url);
+        div.appendChild(deleteBtn);
+
         if (data.type === 'image') {
-          div.innerHTML = `<img src="${data.url}" alt="${data.title}"><h3>${data.title}</h3>`;
+          div.innerHTML += `<img src="${data.url}" alt="${data.title}"><h3>${data.title}</h3>`;
         } else {
-          div.innerHTML = `<video controls><source src="${data.url}" type="video/mp4"></video><h3>${data.title}</h3>`;
+          div.innerHTML += `<video controls><source src="${data.url}" type="video/mp4"></video><h3>${data.title}</h3>`;
         }
         gallery.appendChild(div);
       });
     }
 
-    // رفع الملفات إلى Firebase Storage و Firestore
+    // حذف ملف من Storage و Firestore
+    async function deleteMedia(docId, fileUrl) {
+      if (!confirm("هل أنت متأكد أنك تريد حذف هذا الملف؟")) return;
+      try {
+        const fileRef = storage.refFromURL(fileUrl);
+        await fileRef.delete();
+        await db.collection("media").doc(docId).delete();
+        alert("✅ تم حذف الملف بنجاح!");
+        renderGallery();
+      } catch (err) {
+        console.error(err);
+        alert("❌ حدث خطأ أثناء الحذف");
+      }
+    }
+
+    // رفع الملفات
     uploadInput.addEventListener('change', async (e) => {
       const files = Array.from(e.target.files);
       for (const file of files) {
@@ -131,7 +166,6 @@
       uploadInput.value = '';
     });
 
-    // تشغيل المعرض عند فتح الصفحة
     renderGallery();
   </script>
 </body>
