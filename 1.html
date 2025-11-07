@@ -1,75 +1,22 @@
 <!DOCTYPE html>
 <html lang="ar">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>معرض الصور والفيديوهات - الواحة</title>
   <style>
-    body {
-      font-family: 'Cairo', sans-serif;
-      background: #f8f9fa;
-      margin: 0;
-      padding: 0;
-      direction: rtl;
-    }
-    header {
-      background: #1e88e5;
-      color: white;
-      padding: 1rem;
-      text-align: center;
-      position: sticky;
-      top: 0;
-      z-index: 1000;
-    }
-    h1 {margin: 0;}
-    .controls {
-      margin: 1rem auto;
-      text-align: center;
-    }
-    .controls input[type="file"] {
-      margin: 0.5rem;
-    }
-    .gallery {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-      gap: 15px;
-      padding: 20px;
-    }
-    .item {
-      background: white;
-      border-radius: 10px;
-      overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      transition: transform 0.2s;
-      position: relative;
-    }
-    .item:hover {
-      transform: scale(1.03);
-    }
-    .item img, .item video {
-      width: 100%;
-      height: auto;
-      display: block;
-    }
-    .item h3 {
-      margin: 0.5rem;
-      font-size: 1rem;
-    }
-    .delete-btn {
-      position: absolute;
-      top: 5px;
-      left: 5px;
-      background: #d32f2f;
-      color: white;
-      border: none;
-      padding: 0.3rem 0.6rem;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 0.8rem;
-    }
-    .delete-btn:hover {
-      background: #b71c1c;
-    }
+    body { font-family: 'Cairo', sans-serif; background: #f8f9fa; margin:0; padding:0; direction: rtl; }
+    header { background: #1e88e5; color:white; padding:1rem; text-align:center; position: sticky; top:0; }
+    h1 {margin:0;}
+    .controls {margin:1rem auto; text-align:center;}
+    .controls input {margin:0.5rem;}
+    .gallery {display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:15px; padding:20px;}
+    .item {background:white; border-radius:10px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.1); position:relative; transition: transform 0.2s;}
+    .item:hover {transform:scale(1.03);}
+    .item img, .item video {width:100%; height:auto; display:block;}
+    .item h3 {margin:0.5rem; font-size:1rem;}
+    .delete-btn {position:absolute; top:5px; left:5px; background:#d32f2f; color:white; border:none; padding:0.3rem 0.6rem; border-radius:5px; cursor:pointer; font-size:0.8rem;}
+    .delete-btn:hover {background:#b71c1c;}
   </style>
 </head>
 <body>
@@ -90,6 +37,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
   <script>
+    // إعدادات Firebase الخاصة بمشروعك
     const firebaseConfig = {
       apiKey: "AIzaSyA-HZ2LfaMFxFuYWe3zhgdNK5KMAGJ0hV4",
       authDomain: "alwaha-club.firebaseapp.com",
@@ -100,6 +48,7 @@
       measurementId: "G-H7ZZ9G98M8"
     };
 
+    // تهيئة Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     const storage = firebase.storage();
@@ -110,19 +59,21 @@
     // تحميل وعرض المعرض
     async function renderGallery() {
       gallery.innerHTML = '<p style="text-align:center">جارِ تحميل الوسائط...</p>';
-      const snapshot = await db.collection("media").get();
+      const snapshot = await db.collection("media").orderBy("createdAt","desc").get();
       gallery.innerHTML = '';
       snapshot.forEach(doc => {
         const data = doc.data();
         const div = document.createElement('div');
         div.className = 'item';
+        
+        // زر حذف
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'delete-btn';
         deleteBtn.textContent = 'حذف';
         deleteBtn.onclick = () => deleteMedia(doc.id, data.url);
         div.appendChild(deleteBtn);
 
-        if (data.type === 'image') {
+        if(data.type === 'image'){
           div.innerHTML += `<img src="${data.url}" alt="${data.title}"><h3>${data.title}</h3>`;
         } else {
           div.innerHTML += `<video controls><source src="${data.url}" type="video/mp4"></video><h3>${data.title}</h3>`;
@@ -132,38 +83,42 @@
     }
 
     // حذف ملف من Storage و Firestore
-    async function deleteMedia(docId, fileUrl) {
-      if (!confirm("هل أنت متأكد أنك تريد حذف هذا الملف؟")) return;
-      try {
+    async function deleteMedia(docId, fileUrl){
+      if(!confirm("هل أنت متأكد أنك تريد حذف هذا الملف؟")) return;
+      try{
         const fileRef = storage.refFromURL(fileUrl);
         await fileRef.delete();
         await db.collection("media").doc(docId).delete();
         alert("✅ تم حذف الملف بنجاح!");
         renderGallery();
-      } catch (err) {
+      } catch(err){
         console.error(err);
         alert("❌ حدث خطأ أثناء الحذف");
       }
     }
 
     // رفع الملفات
-    uploadInput.addEventListener('change', async (e) => {
+    uploadInput.addEventListener('change', async (e)=>{
       const files = Array.from(e.target.files);
-      for (const file of files) {
-        const storageRef = storage.ref('uploads/' + Date.now() + '_' + file.name);
-        await storageRef.put(file);
-        const url = await storageRef.getDownloadURL();
-        const type = file.type.startsWith('video') ? 'video' : 'image';
-        await db.collection("media").add({
-          title: file.name,
-          url,
-          type,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
+      for(const file of files){
+        try{
+          const storageRef = storage.ref('uploads/' + Date.now() + '_' + file.name);
+          await storageRef.put(file);
+          const url = await storageRef.getDownloadURL();
+          const type = file.type.startsWith('video') ? 'video' : 'image';
+          await db.collection("media").add({
+            title: file.name,
+            url,
+            type,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        }catch(err){
+          console.error("خطأ رفع الملف:", err);
+          alert("❌ حدث خطأ أثناء رفع الملف: " + err.message);
+        }
       }
-      alert("✅ تم رفع الملفات بنجاح!");
       renderGallery();
-      uploadInput.value = '';
+      uploadInput.value='';
     });
 
     renderGallery();
