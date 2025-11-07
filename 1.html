@@ -68,13 +68,13 @@
     <div class="gallery" id="gallery"></div>
   </main>
 
-  <!-- Firebase SDK -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+  <!-- Firebase Compat SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
-    // إعدادات Firebase الخاصة بمشروعك
+  <script>
+    // إعدادات Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyA-HZ2LfaMFxFuYWe3zhgdNK5KMAGJ0hV4",
       authDomain: "alwaha-club.firebaseapp.com",
@@ -86,16 +86,17 @@
     };
 
     // تهيئة Firebase
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const storage = getStorage(app);
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const storage = firebase.storage();
 
     const gallery = document.getElementById('gallery');
     const uploadInput = document.getElementById('upload');
 
+    // تحميل وعرض المعرض
     async function renderGallery() {
       gallery.innerHTML = '<p style="text-align:center">جارِ تحميل الوسائط...</p>';
-      const snapshot = await getDocs(collection(db, "media"));
+      const snapshot = await db.collection("media").get();
       gallery.innerHTML = '';
       snapshot.forEach(doc => {
         const data = doc.data();
@@ -110,18 +111,19 @@
       });
     }
 
+    // رفع الملفات إلى Firebase Storage و Firestore
     uploadInput.addEventListener('change', async (e) => {
       const files = Array.from(e.target.files);
       for (const file of files) {
-        const storageRef = ref(storage, 'uploads/' + Date.now() + '_' + file.name);
-        await uploadBytes(storageRef, file);
-        const url = await getDownloadURL(storageRef);
+        const storageRef = storage.ref('uploads/' + Date.now() + '_' + file.name);
+        await storageRef.put(file);
+        const url = await storageRef.getDownloadURL();
         const type = file.type.startsWith('video') ? 'video' : 'image';
-        await addDoc(collection(db, "media"), {
+        await db.collection("media").add({
           title: file.name,
           url,
           type,
-          createdAt: serverTimestamp()
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
       }
       alert("✅ تم رفع الملفات بنجاح!");
@@ -129,6 +131,7 @@
       uploadInput.value = '';
     });
 
+    // تشغيل المعرض عند فتح الصفحة
     renderGallery();
   </script>
 </body>
